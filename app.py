@@ -604,20 +604,42 @@ st.set_page_config(
         "About": None,
     },
 )
-# 상단 Share/메뉴 숨김
+# 상단 Share/메뉴 숨김 + 모바일 레이아웃
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
 
 st.title("주식 데이터 분석기")
 
-single_tab, compare_tab, calc_tab = st.tabs(
-    ["단일 종목", "종목 비교", "수익률 계산기"]
-)
+if "main_tab" not in st.session_state:
+    st.session_state["main_tab"] = "단일 종목"
 
-with single_tab:
+# 왼쪽: 단일 종목·종목 비교 / 오른쪽 끝: 수익률 계산기
+with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
+    for label in ("단일 종목", "종목 비교"):
+        is_active = st.session_state["main_tab"] == label
+        if st.button(
+            label,
+            key=f"nav_{label}",
+            type="primary" if is_active else "secondary",
+            width="content",
+        ):
+            st.session_state["main_tab"] = label
+
+    st.html('<div class="main-nav-spacer" aria-hidden="true"></div>')
+
+    calc_label = "수익률 계산기"
+    calc_active = st.session_state["main_tab"] == calc_label
+    if st.button(
+        calc_label,
+        key="nav_calc",
+        type="primary" if calc_active else "secondary",
+        width="content",
+    ):
+        st.session_state["main_tab"] = calc_label
+
+active = st.session_state["main_tab"]
+if active == "단일 종목":
     render_single_stock_tab()
-
-with compare_tab:
+elif active == "종목 비교":
     render_compare_tab()
-
-with calc_tab:
+else:
     render_return_calculator()

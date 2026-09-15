@@ -27,24 +27,59 @@ a[href*="streamlit.io/cloud"] {
   display: none !important;
 }
 
-/* 탭이 좁은 화면에서 가로 스크롤되며 잘리지 않도록 */
+/* 전체 화면을 아래로: 상단 잘림/깨짐 방지 */
+.block-container {
+  padding-top: 3.25rem !important;
+  padding-bottom: 2.5rem !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+  max-width: 100% !important;
+}
+
+/* 제목: 한 줄 유지, 모바일에서 크기 조절 */
+.block-container h1 {
+  font-size: clamp(1.35rem, 5vw, 2.25rem) !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.25rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* 메인 네비: 왼쪽 2개 + 오른쪽 끝 계산기 */
+.st-key-main_nav_row {
+  width: 100% !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.st-key-main_nav_row [data-testid="stHorizontalBlock"] {
+  width: 100% !important;
+  align-items: center !important;
+}
+
+.main-nav-spacer {
+  width: 100%;
+  height: 1px;
+}
+
+/* spacer를 감싼 컨테이너가 남은 가로 공간을 차지 */
+.st-key-main_nav_row [data-testid="stHTML"]:has(.main-nav-spacer),
+.st-key-main_nav_row .element-container:has(.main-nav-spacer),
+.st-key-main_nav_row div:has(> .main-nav-spacer) {
+  flex: 1 1 auto !important;
+  min-width: 0.75rem !important;
+  max-width: none !important;
+}
+
+/* 차트 등 내부 탭 */
 div[data-testid="stTabs"] [role="tablist"] {
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   gap: 0.25rem;
   -webkit-overflow-scrolling: touch;
-}
-
-/* 메인 탭(3개)만: 단일 종목·종목 비교는 왼쪽, 수익률 계산기는 오른쪽 끝 */
-div[data-testid="stTabs"] [role="tablist"]:has(> button[role="tab"]:nth-child(3):last-child) {
   width: 100%;
-  display: flex !important;
-  align-items: center;
-}
-
-div[data-testid="stTabs"] [role="tablist"]:has(> button[role="tab"]:nth-child(3):last-child)
-  > button[role="tab"]:last-child {
-  margin-left: auto !important;
 }
 
 div[data-testid="stTabs"] button[role="tab"] {
@@ -53,16 +88,41 @@ div[data-testid="stTabs"] button[role="tab"] {
 }
 
 @media (max-width: 768px) {
+  .block-container {
+    padding-top: 4.75rem !important;
+    padding-bottom: 2rem !important;
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
+  }
+
+  .block-container h1 {
+    font-size: 1.35rem !important;
+    margin-bottom: 0.85rem !important;
+  }
+
   div[data-testid="stTabs"] button[role="tab"] {
     font-size: 0.85rem;
     padding-left: 0.6rem !important;
     padding-right: 0.6rem !important;
   }
 
-  /* 모바일에서 본문 여백 축소 */
+  /* 메인 네비 버튼 글자 크기 */
+  .main-nav-row button {
+    font-size: 0.82rem !important;
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+  }
+}
+
+/* 안전 영역(노치/상태바) 대응 */
+@supports (padding: max(0px)) {
   .block-container {
-    padding-top: 1rem !important;
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+    padding-top: max(3.25rem, env(safe-area-inset-top, 0px) + 2.5rem) !important;
+  }
+
+  @media (max-width: 768px) {
+    .block-container {
+      padding-top: max(4.75rem, env(safe-area-inset-top, 0px) + 3.5rem) !important;
+    }
   }
 }
