@@ -1,6 +1,7 @@
 """Streamlit 주식 데이터 분석기."""
 
 from datetime import date, timedelta
+from pathlib import Path
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -579,7 +580,18 @@ def render_return_calculator() -> None:
         )
 
 
-st.set_page_config(page_title="주식 데이터 분석기", layout="wide")
+st.set_page_config(
+    page_title="주식 데이터 분석기",
+    layout="wide",
+    menu_items={
+        "Get Help": None,
+        "Report a bug": None,
+        "About": None,
+    },
+)
+# 상단 Share/메뉴, 하단 Manage app 숨김
+st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
+
 st.title("주식 데이터 분석기")
 
 render_return_calculator()

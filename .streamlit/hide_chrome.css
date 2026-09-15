@@ -1,0 +1,28 @@
+/* Streamlit 상단 툴바 (Share, 메뉴 등) 숨김 */
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stHeader"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+#MainMenu {
+  visibility: hidden !important;
+}
+
+header {
+  visibility: hidden !important;
+}
+
+/* 하단 Manage app / 배포 관련 위젯 숨김 */
+[data-testid="stStatusWidget"],
+[data-testid="manage-app-button"],
+.stAppDeployButton,
+div[data-testid="stAppDeployButton"],
+.viewerBadge_container__r5mkS,
+.viewerBadge_link__qRIco,
+a[href*="streamlit.io/cloud"] {
+  display: none !important;
+  visibility: hidden !important;
+}

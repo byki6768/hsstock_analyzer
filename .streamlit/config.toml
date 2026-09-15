@@ -1,0 +1,6 @@
+[client]
+# Community Cloud의 Share/GitHub 등은 CSS로 추가 숨김
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false
