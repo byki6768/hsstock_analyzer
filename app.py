@@ -506,42 +506,64 @@ def render_compare_tab() -> None:
         st.dataframe(latest_rows, width="stretch", hide_index=True)
 
 
-def render_return_calculator() -> None:
-    """메인 탭용 수익률 계산기 (모바일 반응형)."""
+def render_return_calculator(*, in_sidebar: bool = False) -> None:
+    """수익률 계산기. in_sidebar=True 이면 사이드바에 표시."""
+    ui = st.sidebar if in_sidebar else st
+    key_prefix = "side_" if in_sidebar else "main_"
+
     default_symbol = "005930.KS"
     if "stock_result" in st.session_state:
         default_symbol = st.session_state["stock_result"].get("symbol", default_symbol)
 
-    st.caption("매수일과 금액을 입력하면 현재 가치와 수익률을 계산합니다.")
+    if in_sidebar:
+        ui.header("수익률 계산기")
+    else:
+        ui.caption("매수일과 금액을 입력하면 현재 가치와 수익률을 계산합니다.")
 
-    with st.form("return_calculator_form", clear_on_submit=False):
-        symbol = st.text_input(
+    with ui.form(f"{key_prefix}return_calculator_form", clear_on_submit=False):
+        symbol = ui.text_input(
             "종목 코드",
             value=default_symbol,
-            key="calc_symbol",
+            key=f"{key_prefix}calc_symbol",
         ).strip()
 
-        # 좁은 화면에서는 세로로, 넓은 화면에서는 가로로 배치
-        date_col, amount_col = st.columns(2)
-        with date_col:
-            buy_date = st.date_input(
+        if in_sidebar:
+            buy_date = ui.date_input(
                 "매수 날짜",
                 value=date.today() - timedelta(days=90),
                 max_value=date.today(),
-                key="calc_buy_date",
+                key=f"{key_prefix}calc_buy_date",
             )
-        with amount_col:
             is_kr = symbol.upper().endswith((".KS", ".KQ"))
             default_amount = 1_000_000.0 if is_kr else 1000.0
-            buy_amount = st.number_input(
+            buy_amount = ui.number_input(
                 "매수 금액",
                 min_value=0.0,
                 value=default_amount,
                 step=10000.0 if is_kr else 100.0,
-                key="calc_buy_amount",
+                key=f"{key_prefix}calc_buy_amount",
             )
+        else:
+            date_col, amount_col = ui.columns(2)
+            with date_col:
+                buy_date = ui.date_input(
+                    "매수 날짜",
+                    value=date.today() - timedelta(days=90),
+                    max_value=date.today(),
+                    key=f"{key_prefix}calc_buy_date",
+                )
+            with amount_col:
+                is_kr = symbol.upper().endswith((".KS", ".KQ"))
+                default_amount = 1_000_000.0 if is_kr else 1000.0
+                buy_amount = ui.number_input(
+                    "매수 금액",
+                    min_value=0.0,
+                    value=default_amount,
+                    step=10000.0 if is_kr else 100.0,
+                    key=f"{key_prefix}calc_buy_amount",
+                )
 
-        submitted = st.form_submit_button("수익률 계산", type="primary", width="stretch")
+        submitted = ui.form_submit_button("수익률 계산", type="primary", width="stretch")
 
     if submitted:
         st.session_state["calc_auto_result"] = True
@@ -557,41 +579,130 @@ def render_return_calculator() -> None:
     buy_amount = st.session_state.get("calc_last_buy_amount", float(buy_amount))
 
     if not symbol:
-        st.error("종목 코드를 입력해 주세요.")
+        ui.error("종목 코드를 입력해 주세요.")
         return
     if buy_amount <= 0:
-        st.error("매수 금액은 0보다 커야 합니다.")
+        ui.error("매수 금액은 0보다 커야 합니다.")
         return
 
     with st.spinner("계산 중..."):
         try:
             result = calculate_return(symbol, buy_date, float(buy_amount))
         except Exception as exc:  # noqa: BLE001
-            st.error(f"계산 실패: {exc}")
+            ui.error(f"계산 실패: {exc}")
             return
 
     if result is None:
-        st.error("해당 기간의 시세를 찾지 못했습니다.")
+        ui.error("해당 기간의 시세를 찾지 못했습니다.")
         return
 
     is_profit = result["return_pct"] >= 0
     color = "blue" if is_profit else "red"
 
-    st.success(f"{result['company_name']} ({symbol})")
+    ui.success(f"{result['company_name']} ({symbol})")
     if result["actual_buy_date"] != buy_date:
-        st.caption(f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)")
+        ui.caption(f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)")
 
-    price_col, value_col = st.columns(2)
-    with price_col:
-        st.metric("매수가", format_price(symbol, result["buy_price"]))
-        st.metric("현재가", format_price(symbol, result["current_price"]))
-    with value_col:
-        st.metric("현재 가치", format_money(symbol, result["current_value"]))
-        st.metric("수익/손실", format_money(symbol, result["profit"]))
+    if in_sidebar:
+        ui.write(f"매수가: **{format_price(symbol, result['buy_price'])}**")
+        ui.write(f"현재가: **{format_price(symbol, result['current_price'])}**")
+        ui.markdown(
+            f":{color}[**현재 가치: {format_money(symbol, result['current_value'])}**]"
+        )
+        ui.markdown(
+            f":{color}[**수익/손실: {format_money(symbol, result['profit'])}**]"
+        )
+        ui.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
+    else:
+        price_col, value_col = ui.columns(2)
+        with price_col:
+            ui.metric("매수가", format_price(symbol, result["buy_price"]))
+            ui.metric("현재가", format_price(symbol, result["current_price"]))
+        with value_col:
+            ui.metric("현재 가치", format_money(symbol, result["current_value"]))
+            ui.metric("수익/손실", format_money(symbol, result["profit"]))
+        ui.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
 
-    st.markdown(
-        f":{color}[**수익률: {result['return_pct']:+.2f}%**]"
+
+def detect_mobile() -> bool:
+    """뷰포트 너비로 모바일 여부를 판별한다 (쿠키/쿼리 동기화)."""
+    st.html(
+        """
+        <script>
+        (function () {
+          try {
+            const flag = window.innerWidth <= 768 ? '1' : '0';
+            document.cookie = 'hs_is_mobile=' + flag
+              + '; path=/; max-age=31536000; SameSite=Lax';
+            const url = new URL(window.parent.location.href);
+            if (url.searchParams.get('m') !== flag) {
+              url.searchParams.set('m', flag);
+              window.parent.location.replace(url.toString());
+            }
+          } catch (e) {}
+        })();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
     )
+
+    flag = st.query_params.get("m")
+    if flag not in ("0", "1"):
+        try:
+            flag = (st.context.cookies or {}).get("hs_is_mobile", "0")
+        except Exception:  # noqa: BLE001
+            flag = "0"
+    return flag == "1"
+
+
+def render_desktop_layout() -> None:
+    """데스크톱: 사이드바 계산기 + 단일/비교 탭."""
+    render_return_calculator(in_sidebar=True)
+
+    single_tab, compare_tab = st.tabs(["단일 종목", "종목 비교"])
+    with single_tab:
+        render_single_stock_tab()
+    with compare_tab:
+        render_compare_tab()
+
+
+def render_mobile_layout() -> None:
+    """모바일: 상단 네비(오른쪽 끝 수익률 계산기) 유지."""
+    if "main_tab" not in st.session_state:
+        st.session_state["main_tab"] = "단일 종목"
+
+    with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
+        for label in ("단일 종목", "종목 비교"):
+            is_active = st.session_state["main_tab"] == label
+            if st.button(
+                label,
+                key=f"nav_{label}",
+                type="primary" if is_active else "secondary",
+                width="content",
+            ):
+                st.session_state["main_tab"] = label
+                st.rerun()
+
+        st.html('<div class="main-nav-spacer" aria-hidden="true"></div>')
+
+        calc_label = "수익률 계산기"
+        calc_active = st.session_state["main_tab"] == calc_label
+        if st.button(
+            calc_label,
+            key="nav_calc",
+            type="primary" if calc_active else "secondary",
+            width="content",
+        ):
+            st.session_state["main_tab"] = calc_label
+            st.rerun()
+
+    active = st.session_state["main_tab"]
+    if active == "단일 종목":
+        render_single_stock_tab()
+    elif active == "종목 비교":
+        render_compare_tab()
+    else:
+        render_return_calculator(in_sidebar=False)
 
 
 def apply_theme_preference(mode: str) -> None:
@@ -684,53 +795,20 @@ def render_theme_toggle() -> None:
 st.set_page_config(
     page_title="주식 데이터 분석기",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
     menu_items={
         "Get Help": None,
         "Report a bug": None,
         "About": None,
     },
 )
-# 상단 Share/메뉴 숨김 + 모바일 레이아웃
+# 상단 Share/메뉴 숨김 + 반응형 레이아웃
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
 
 render_theme_toggle()
-
 st.title("주식 데이터 분석기")
 
-if "main_tab" not in st.session_state:
-    st.session_state["main_tab"] = "단일 종목"
-
-# 왼쪽: 단일 종목·종목 비교 / 오른쪽 끝: 수익률 계산기
-with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
-    for label in ("단일 종목", "종목 비교"):
-        is_active = st.session_state["main_tab"] == label
-        if st.button(
-            label,
-            key=f"nav_{label}",
-            type="primary" if is_active else "secondary",
-            width="content",
-        ):
-            st.session_state["main_tab"] = label
-            st.rerun()
-
-    st.html('<div class="main-nav-spacer" aria-hidden="true"></div>')
-
-    calc_label = "수익률 계산기"
-    calc_active = st.session_state["main_tab"] == calc_label
-    if st.button(
-        calc_label,
-        key="nav_calc",
-        type="primary" if calc_active else "secondary",
-        width="content",
-    ):
-        st.session_state["main_tab"] = calc_label
-        st.rerun()
-
-active = st.session_state["main_tab"]
-if active == "단일 종목":
-    render_single_stock_tab()
-elif active == "종목 비교":
-    render_compare_tab()
+if detect_mobile():
+    render_mobile_layout()
 else:
-    render_return_calculator()
+    render_desktop_layout()
