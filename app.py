@@ -709,14 +709,14 @@ def render_desktop_layout() -> None:
 
 
 def render_mobile_layout() -> None:
-    """모바일: 상단 네비(오른쪽 끝 수익률 계산기) 유지."""
+    """모바일: 왼쪽 단일/비교, 오른쪽 끝 수익률 계산기 (가로 한 줄)."""
     if "main_tab" not in st.session_state:
         st.session_state["main_tab"] = "단일 종목"
-    # 데스크톱에서 쓰던 탭 상태가 남아 있어도 모바일 네비는 3개 메뉴만 사용
     if st.session_state["main_tab"] not in ("단일 종목", "종목 비교", "수익률 계산기"):
         st.session_state["main_tab"] = "단일 종목"
 
     with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
+        # 왼쪽 그룹
         for label in ("단일 종목", "종목 비교"):
             is_active = st.session_state["main_tab"] == label
             if st.button(
@@ -728,6 +728,7 @@ def render_mobile_layout() -> None:
                 st.session_state["main_tab"] = label
                 st.rerun()
 
+        # 가운데 여백 → 계산기를 오른쪽 끝으로
         st.html('<div class="main-nav-spacer" aria-hidden="true"></div>')
 
         calc_label = "수익률 계산기"
