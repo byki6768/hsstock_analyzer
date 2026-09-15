@@ -636,18 +636,29 @@ def apply_theme_preference(mode: str) -> None:
 
 
 def render_theme_toggle() -> None:
-    """화면 상단 오른쪽: 낮 / 밤 / 시스템 테마 아이콘 버튼."""
+    """화면 상단 오른쪽: 클릭 시 낮 → 밤 → 시스템 순환 토글."""
+    theme_cycle = ("light", "dark", "system")
+    theme_meta = {
+        "light": (":material/light_mode:", "낮", "현재: 낮 (라이트) — 클릭하면 밤으로"),
+        "dark": (":material/dark_mode:", "밤", "현재: 밤 (다크) — 클릭하면 시스템으로"),
+        "system": (
+            ":material/brightness_auto:",
+            "시스템",
+            "현재: 시스템 — 클릭하면 낮으로",
+        ),
+    }
+
     if "ui_theme" not in st.session_state:
         st.session_state["ui_theme"] = "system"
 
-    apply_theme_preference(st.session_state["ui_theme"])
+    current = st.session_state["ui_theme"]
+    if current not in theme_meta:
+        current = "system"
+        st.session_state["ui_theme"] = current
 
-    options = [
-        ("light", ":material/light_mode:", "낮 (라이트)"),
-        ("dark", ":material/dark_mode:", "밤 (다크)"),
-        ("system", ":material/brightness_auto:", "시스템 설정"),
-    ]
+    apply_theme_preference(current)
 
+    icon, label, help_text = theme_meta[current]
     with st.container(
         horizontal=True,
         gap="small",
@@ -655,19 +666,19 @@ def render_theme_toggle() -> None:
         horizontal_alignment="right",
         key="theme_toggle_bar",
     ):
-        for mode, icon, help_text in options:
-            is_active = st.session_state["ui_theme"] == mode
-            if st.button(
-                help_text.split(" ")[0],  # 낮 / 밤 / 시스템
-                key=f"theme_{mode}",
-                icon=icon,
-                help=help_text,
-                type="primary" if is_active else "tertiary",
-                width="content",
-            ):
-                st.session_state["ui_theme"] = mode
-                apply_theme_preference(mode)
-                st.rerun()
+        if st.button(
+            label,
+            key="theme_cycle_toggle",
+            icon=icon,
+            help=help_text,
+            type="secondary",
+            width="content",
+        ):
+            idx = theme_cycle.index(current)
+            next_mode = theme_cycle[(idx + 1) % len(theme_cycle)]
+            st.session_state["ui_theme"] = next_mode
+            apply_theme_preference(next_mode)
+            st.rerun()
 
 
 st.set_page_config(
