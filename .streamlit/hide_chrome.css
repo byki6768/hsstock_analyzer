@@ -105,21 +105,18 @@ div[data-testid="stTabs"] button[role="tab"] {
   .st-key-main_nav_row {
     display: none !important;
   }
-
-  [data-testid="stSidebar"] {
-    display: block !important;
-  }
-
-  [data-testid="stSidebarCollapsedControl"] {
-    display: flex !important;
-  }
 }
 
-/* ===== 모바일: 현재 네비 디자인 유지 ===== */
+/* ===== 모바일: 네비 + 계산기 버튼, 사이드바 숨김 ===== */
 @media (max-width: 768px) {
   [data-testid="stSidebar"],
   [data-testid="stSidebarCollapsedControl"] {
     display: none !important;
+  }
+
+  .st-key-main_nav_row {
+    display: block !important;
+    visibility: visible !important;
   }
 
   .block-container {

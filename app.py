@@ -627,7 +627,59 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
 
 
 def detect_mobile() -> bool:
-    """뷰포트 너비로 모바일 여부를 판별한다 (쿠키/쿼리 동기화)."""
+    """모바일 여부를 판별한다. User-Agent + 쿼리/쿠키를 사용."""
+    # 수동 오버라이드 (?m=1 / ?m=0)
+    flag = st.query_params.get("m")
+    if flag in ("0", "1"):
+        return flag == "1"
+
+    # 갤럭시 등 실제 휴대폰: User-Agent가 가장 신뢰됨
+    ua = ""
+    try:
+        headers = st.context.headers
+        ua = (
+            headers.get("User-Agent")
+            or headers.get("user-agent")
+            or headers.get("Sec-CH-UA-Mobile")
+            or ""
+        )
+        if isinstance(ua, (list, tuple)):
+            ua = " ".join(str(x) for x in ua)
+        ua = str(ua).lower()
+    except Exception:  # noqa: BLE001
+        ua = ""
+
+    # Client Hint: ?1 = mobile
+    if "?1" in ua or ua.strip() == "?1":
+        return True
+
+    mobile_tokens = (
+        "mobile",
+        "android",
+        "iphone",
+        "ipod",
+        "webos",
+        "blackberry",
+        "opera mini",
+        "opera mobi",
+        "iemobile",
+        "windows phone",
+        "samsungbrowser",
+    )
+    if any(token in ua for token in mobile_tokens):
+        # Android 태블릿(모바일 UA 없는 경우)은 제외하되, Mobile 키워드 있으면 폰
+        if "android" in ua and "mobile" not in ua and "tablet" in ua:
+            return False
+        return True
+
+    # 쿠키 (이전 방문/JS 동기화)
+    try:
+        if (st.context.cookies or {}).get("hs_is_mobile") == "1":
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+
+    # 뷰포트 동기화용 JS (좁은 데스크톱 창 대응). 강제 리다이렉트는 Cloud에서 불안정해 제거
     st.html(
         """
         <script>
@@ -636,25 +688,13 @@ def detect_mobile() -> bool:
             const flag = window.innerWidth <= 768 ? '1' : '0';
             document.cookie = 'hs_is_mobile=' + flag
               + '; path=/; max-age=31536000; SameSite=Lax';
-            const url = new URL(window.parent.location.href);
-            if (url.searchParams.get('m') !== flag) {
-              url.searchParams.set('m', flag);
-              window.parent.location.replace(url.toString());
-            }
           } catch (e) {}
         })();
         </script>
         """,
         unsafe_allow_javascript=True,
     )
-
-    flag = st.query_params.get("m")
-    if flag not in ("0", "1"):
-        try:
-            flag = (st.context.cookies or {}).get("hs_is_mobile", "0")
-        except Exception:  # noqa: BLE001
-            flag = "0"
-    return flag == "1"
+    return False
 
 
 def render_desktop_layout() -> None:
@@ -671,6 +711,9 @@ def render_desktop_layout() -> None:
 def render_mobile_layout() -> None:
     """모바일: 상단 네비(오른쪽 끝 수익률 계산기) 유지."""
     if "main_tab" not in st.session_state:
+        st.session_state["main_tab"] = "단일 종목"
+    # 데스크톱에서 쓰던 탭 상태가 남아 있어도 모바일 네비는 3개 메뉴만 사용
+    if st.session_state["main_tab"] not in ("단일 종목", "종목 비교", "수익률 계산기"):
         st.session_state["main_tab"] = "단일 종목"
 
     with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
