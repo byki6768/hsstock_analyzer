@@ -594,6 +594,82 @@ def render_return_calculator() -> None:
     )
 
 
+def apply_theme_preference(mode: str) -> None:
+    """낮/밤/시스템 테마를 적용한다."""
+    # 시스템 테마 판별용 쿠키 갱신 (다음 요청부터 사용)
+    st.html(
+        """
+        <script>
+        (function () {
+          try {
+            const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.cookie = 'hs_prefers_color=' + (dark ? 'dark' : 'light')
+              + '; path=/; max-age=31536000; SameSite=Lax';
+          } catch (e) {}
+        })();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
+
+    if mode == "light":
+        st._config.set_option("theme.base", "light")
+        return
+    if mode == "dark":
+        st._config.set_option("theme.base", "dark")
+        return
+
+    # system: OS 선호 쿠키 → 없으면 현재 테마 타입 사용
+    preferred = ""
+    try:
+        preferred = (st.context.cookies or {}).get("hs_prefers_color", "")
+    except Exception:  # noqa: BLE001
+        preferred = ""
+    if preferred not in ("light", "dark"):
+        try:
+            preferred = st.context.theme.type
+        except Exception:  # noqa: BLE001
+            preferred = "light"
+    if preferred not in ("light", "dark"):
+        preferred = "light"
+    st._config.set_option("theme.base", preferred)
+
+
+def render_theme_toggle() -> None:
+    """화면 상단 오른쪽: 낮 / 밤 / 시스템 테마 아이콘 버튼."""
+    if "ui_theme" not in st.session_state:
+        st.session_state["ui_theme"] = "system"
+
+    apply_theme_preference(st.session_state["ui_theme"])
+
+    options = [
+        ("light", ":material/light_mode:", "낮 (라이트)"),
+        ("dark", ":material/dark_mode:", "밤 (다크)"),
+        ("system", ":material/brightness_auto:", "시스템 설정"),
+    ]
+
+    with st.container(
+        horizontal=True,
+        gap="small",
+        wrap=False,
+        horizontal_alignment="right",
+        key="theme_toggle_bar",
+    ):
+        for mode, icon, help_text in options:
+            is_active = st.session_state["ui_theme"] == mode
+            if st.button(
+                help_text.split(" ")[0],  # 낮 / 밤 / 시스템
+                key=f"theme_{mode}",
+                icon=icon,
+                help=help_text,
+                type="primary" if is_active else "tertiary",
+                width="content",
+            ):
+                st.session_state["ui_theme"] = mode
+                apply_theme_preference(mode)
+                st.rerun()
+
+
 st.set_page_config(
     page_title="주식 데이터 분석기",
     layout="wide",
@@ -606,6 +682,8 @@ st.set_page_config(
 )
 # 상단 Share/메뉴 숨김 + 모바일 레이아웃
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
+
+render_theme_toggle()
 
 st.title("주식 데이터 분석기")
 

@@ -27,13 +27,33 @@ a[href*="streamlit.io/cloud"] {
   display: none !important;
 }
 
-/* 전체 화면을 아래로: 상단 잘림/깨짐 방지 */
+/* 전체 화면을 아래로: 상단 잘림/깨짐 방지 + 테마 버튼 공간 */
 .block-container {
-  padding-top: 3.25rem !important;
+  padding-top: 4.5rem !important;
   padding-bottom: 2.5rem !important;
   padding-left: 1.25rem !important;
   padding-right: 1.25rem !important;
   max-width: 100% !important;
+}
+
+/* 상단 오른쪽 테마 전환 버튼 */
+.st-key-theme_toggle_bar {
+  position: fixed !important;
+  top: max(0.65rem, env(safe-area-inset-top, 0px)) !important;
+  right: max(0.65rem, env(safe-area-inset-right, 0px)) !important;
+  z-index: 1000001 !important;
+  width: auto !important;
+  background: transparent !important;
+}
+
+.st-key-theme_toggle_bar [data-testid="stHorizontalBlock"] {
+  gap: 0.25rem !important;
+}
+
+.st-key-theme_toggle_bar button {
+  min-width: 2.4rem !important;
+  padding-left: 0.45rem !important;
+  padding-right: 0.45rem !important;
 }
 
 /* 제목: 한 줄 유지, 모바일에서 크기 조절 */
@@ -89,7 +109,7 @@ div[data-testid="stTabs"] button[role="tab"] {
 
 @media (max-width: 768px) {
   .block-container {
-    padding-top: 4.75rem !important;
+    padding-top: 5.5rem !important;
     padding-bottom: 2rem !important;
     padding-left: 0.9rem !important;
     padding-right: 0.9rem !important;
@@ -98,6 +118,13 @@ div[data-testid="stTabs"] button[role="tab"] {
   .block-container h1 {
     font-size: 1.35rem !important;
     margin-bottom: 0.85rem !important;
+  }
+
+  .st-key-theme_toggle_bar button {
+    font-size: 0.75rem !important;
+    min-width: 2.1rem !important;
+    padding-left: 0.3rem !important;
+    padding-right: 0.3rem !important;
   }
 
   div[data-testid="stTabs"] button[role="tab"] {
@@ -117,12 +144,12 @@ div[data-testid="stTabs"] button[role="tab"] {
 /* 안전 영역(노치/상태바) 대응 */
 @supports (padding: max(0px)) {
   .block-container {
-    padding-top: max(3.25rem, env(safe-area-inset-top, 0px) + 2.5rem) !important;
+    padding-top: max(4.5rem, env(safe-area-inset-top, 0px) + 3.25rem) !important;
   }
 
   @media (max-width: 768px) {
     .block-container {
-      padding-top: max(4.75rem, env(safe-area-inset-top, 0px) + 3.5rem) !important;
+      padding-top: max(5.5rem, env(safe-area-inset-top, 0px) + 4.25rem) !important;
     }
   }
 }
