@@ -623,6 +623,7 @@ with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
             width="content",
         ):
             st.session_state["main_tab"] = label
+            st.rerun()
 
     st.html('<div class="main-nav-spacer" aria-hidden="true"></div>')
 
@@ -635,6 +636,7 @@ with st.container(horizontal=True, gap="small", wrap=False, key="main_nav_row"):
         width="content",
     ):
         st.session_state["main_tab"] = calc_label
+        st.rerun()
 
 active = st.session_state["main_tab"]
 if active == "단일 종목":
