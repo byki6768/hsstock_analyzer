@@ -589,8 +589,14 @@ st.set_page_config(
         "About": None,
     },
 )
-# 상단 Share/메뉴, 하단 Manage app 숨김
+# 상단 Share/메뉴 숨김 (모바일 사이드바 버튼은 유지)
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
+st.html(
+    '<div class="mobile-sidebar-hint">'
+    "모바일에서는 왼쪽 위 <strong>›</strong> 버튼을 눌러 "
+    "수익률 계산기(사이드바)를 열 수 있습니다."
+    "</div>"
+)
 
 st.title("주식 데이터 분석기")
 
