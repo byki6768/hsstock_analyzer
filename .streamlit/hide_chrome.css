@@ -35,6 +35,18 @@ div[data-testid="stTabs"] [role="tablist"] {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 메인 탭(3개)만: 단일 종목·종목 비교는 왼쪽, 수익률 계산기는 오른쪽 끝 */
+div[data-testid="stTabs"] [role="tablist"]:has(> button[role="tab"]:nth-child(3):last-child) {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+}
+
+div[data-testid="stTabs"] [role="tablist"]:has(> button[role="tab"]:nth-child(3):last-child)
+  > button[role="tab"]:last-child {
+  margin-left: auto !important;
+}
+
 div[data-testid="stTabs"] button[role="tab"] {
   white-space: nowrap !important;
   font-size: 0.95rem;
