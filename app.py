@@ -507,105 +507,117 @@ def render_compare_tab() -> None:
 
 
 def render_return_calculator() -> None:
-    """사이드바 수익률 계산기."""
+    """메인 탭용 수익률 계산기 (모바일 반응형)."""
     default_symbol = "005930.KS"
     if "stock_result" in st.session_state:
         default_symbol = st.session_state["stock_result"].get("symbol", default_symbol)
 
-    st.sidebar.header("수익률 계산기")
-    symbol = st.sidebar.text_input(
-        "종목 코드",
-        value=default_symbol,
-        key="calc_symbol",
-    ).strip()
-    buy_date = st.sidebar.date_input(
-        "매수 날짜",
-        value=date.today() - timedelta(days=90),
-        max_value=date.today(),
-        key="calc_buy_date",
-    )
-    default_amount = 1_000_000.0 if symbol.upper().endswith((".KS", ".KQ")) else 1000.0
-    buy_amount = st.sidebar.number_input(
-        "매수 금액",
-        min_value=0.0,
-        value=default_amount,
-        step=10000.0 if symbol.upper().endswith((".KS", ".KQ")) else 100.0,
-        key="calc_buy_amount",
-    )
-    calculate = st.sidebar.button("수익률 계산", type="primary", width="stretch")
+    st.caption("매수일과 금액을 입력하면 현재 가치와 수익률을 계산합니다.")
 
-    if calculate or st.session_state.get("calc_auto_result"):
-        if not symbol:
-            st.sidebar.error("종목 코드를 입력해 주세요.")
-            return
-        if buy_amount <= 0:
-            st.sidebar.error("매수 금액은 0보다 커야 합니다.")
-            return
+    with st.form("return_calculator_form", clear_on_submit=False):
+        symbol = st.text_input(
+            "종목 코드",
+            value=default_symbol,
+            key="calc_symbol",
+        ).strip()
 
-        with st.sidebar.spinner("계산 중..."):
-            try:
-                result = calculate_return(symbol, buy_date, float(buy_amount))
-            except Exception as exc:  # noqa: BLE001
-                st.sidebar.error(f"계산 실패: {exc}")
-                return
-
-        if result is None:
-            st.sidebar.error("해당 기간의 시세를 찾지 못했습니다.")
-            return
-
-        st.session_state["calc_auto_result"] = True
-        is_profit = result["return_pct"] >= 0
-        color = "blue" if is_profit else "red"
-
-        st.sidebar.caption(f"{result['company_name']} ({symbol})")
-        if result["actual_buy_date"] != buy_date:
-            st.sidebar.caption(
-                f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)"
+        # 좁은 화면에서는 세로로, 넓은 화면에서는 가로로 배치
+        date_col, amount_col = st.columns(2)
+        with date_col:
+            buy_date = st.date_input(
+                "매수 날짜",
+                value=date.today() - timedelta(days=90),
+                max_value=date.today(),
+                key="calc_buy_date",
+            )
+        with amount_col:
+            is_kr = symbol.upper().endswith((".KS", ".KQ"))
+            default_amount = 1_000_000.0 if is_kr else 1000.0
+            buy_amount = st.number_input(
+                "매수 금액",
+                min_value=0.0,
+                value=default_amount,
+                step=10000.0 if is_kr else 100.0,
+                key="calc_buy_amount",
             )
 
-        st.sidebar.write(
-            f"매수가: **{format_price(symbol, result['buy_price'])}**"
-        )
-        st.sidebar.write(
-            f"현재가: **{format_price(symbol, result['current_price'])}**"
-        )
-        st.sidebar.markdown(
-            f":{color}[**현재 가치: {format_money(symbol, result['current_value'])}**]"
-        )
-        st.sidebar.markdown(
-            f":{color}[**수익/손실: {format_money(symbol, result['profit'])}**]"
-        )
-        st.sidebar.markdown(
-            f":{color}[**수익률: {result['return_pct']:+.2f}%**]"
-        )
+        submitted = st.form_submit_button("수익률 계산", type="primary", width="stretch")
+
+    if submitted:
+        st.session_state["calc_auto_result"] = True
+        st.session_state["calc_last_symbol"] = symbol
+        st.session_state["calc_last_buy_date"] = buy_date
+        st.session_state["calc_last_buy_amount"] = float(buy_amount)
+
+    if not st.session_state.get("calc_auto_result"):
+        return
+
+    symbol = st.session_state.get("calc_last_symbol", symbol)
+    buy_date = st.session_state.get("calc_last_buy_date", buy_date)
+    buy_amount = st.session_state.get("calc_last_buy_amount", float(buy_amount))
+
+    if not symbol:
+        st.error("종목 코드를 입력해 주세요.")
+        return
+    if buy_amount <= 0:
+        st.error("매수 금액은 0보다 커야 합니다.")
+        return
+
+    with st.spinner("계산 중..."):
+        try:
+            result = calculate_return(symbol, buy_date, float(buy_amount))
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"계산 실패: {exc}")
+            return
+
+    if result is None:
+        st.error("해당 기간의 시세를 찾지 못했습니다.")
+        return
+
+    is_profit = result["return_pct"] >= 0
+    color = "blue" if is_profit else "red"
+
+    st.success(f"{result['company_name']} ({symbol})")
+    if result["actual_buy_date"] != buy_date:
+        st.caption(f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)")
+
+    price_col, value_col = st.columns(2)
+    with price_col:
+        st.metric("매수가", format_price(symbol, result["buy_price"]))
+        st.metric("현재가", format_price(symbol, result["current_price"]))
+    with value_col:
+        st.metric("현재 가치", format_money(symbol, result["current_value"]))
+        st.metric("수익/손실", format_money(symbol, result["profit"]))
+
+    st.markdown(
+        f":{color}[**수익률: {result['return_pct']:+.2f}%**]"
+    )
 
 
 st.set_page_config(
     page_title="주식 데이터 분석기",
     layout="wide",
+    initial_sidebar_state="collapsed",
     menu_items={
         "Get Help": None,
         "Report a bug": None,
         "About": None,
     },
 )
-# 상단 Share/메뉴 숨김 (모바일 사이드바 버튼은 유지)
+# 상단 Share/메뉴 숨김
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
-st.html(
-    '<div class="mobile-sidebar-hint">'
-    "모바일에서는 왼쪽 위 <strong>›</strong> 버튼을 눌러 "
-    "수익률 계산기(사이드바)를 열 수 있습니다."
-    "</div>"
-)
 
 st.title("주식 데이터 분석기")
 
-render_return_calculator()
-
-single_tab, compare_tab = st.tabs(["단일 종목", "종목 비교"])
+single_tab, compare_tab, calc_tab = st.tabs(
+    ["단일 종목", "종목 비교", "수익률 계산기"]
+)
 
 with single_tab:
     render_single_stock_tab()
 
 with compare_tab:
     render_compare_tab()
+
+with calc_tab:
+    render_return_calculator()
