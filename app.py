@@ -508,27 +508,29 @@ def render_compare_tab() -> None:
 
 def render_return_calculator(*, in_sidebar: bool = False) -> None:
     """수익률 계산기. in_sidebar=True 이면 사이드바에 표시."""
-    ui = st.sidebar if in_sidebar else st
     key_prefix = "side_" if in_sidebar else "main_"
+    out = st.sidebar if in_sidebar else st
 
     default_symbol = "005930.KS"
     if "stock_result" in st.session_state:
         default_symbol = st.session_state["stock_result"].get("symbol", default_symbol)
 
     if in_sidebar:
-        ui.header("수익률 계산기")
+        out.header("수익률 계산기")
     else:
-        ui.caption("매수일과 금액을 입력하면 현재 가치와 수익률을 계산합니다.")
+        out.caption("매수일과 금액을 입력하면 현재 가치와 수익률을 계산합니다.")
 
-    with ui.form(f"{key_prefix}return_calculator_form", clear_on_submit=False):
-        symbol = ui.text_input(
+    # form은 sidebar/main에 열고, 내부 위젯은 st.* 로 호출해야 submit 버튼이 form에 연결됨
+    form_ctx = st.sidebar.form if in_sidebar else st.form
+    with form_ctx(f"{key_prefix}return_calculator_form", clear_on_submit=False):
+        symbol = st.text_input(
             "종목 코드",
             value=default_symbol,
             key=f"{key_prefix}calc_symbol",
         ).strip()
 
         if in_sidebar:
-            buy_date = ui.date_input(
+            buy_date = st.date_input(
                 "매수 날짜",
                 value=date.today() - timedelta(days=90),
                 max_value=date.today(),
@@ -536,7 +538,7 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
             )
             is_kr = symbol.upper().endswith((".KS", ".KQ"))
             default_amount = 1_000_000.0 if is_kr else 1000.0
-            buy_amount = ui.number_input(
+            buy_amount = st.number_input(
                 "매수 금액",
                 min_value=0.0,
                 value=default_amount,
@@ -544,9 +546,9 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
                 key=f"{key_prefix}calc_buy_amount",
             )
         else:
-            date_col, amount_col = ui.columns(2)
+            date_col, amount_col = st.columns(2)
             with date_col:
-                buy_date = ui.date_input(
+                buy_date = st.date_input(
                     "매수 날짜",
                     value=date.today() - timedelta(days=90),
                     max_value=date.today(),
@@ -555,7 +557,7 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
             with amount_col:
                 is_kr = symbol.upper().endswith((".KS", ".KQ"))
                 default_amount = 1_000_000.0 if is_kr else 1000.0
-                buy_amount = ui.number_input(
+                buy_amount = st.number_input(
                     "매수 금액",
                     min_value=0.0,
                     value=default_amount,
@@ -563,7 +565,7 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
                     key=f"{key_prefix}calc_buy_amount",
                 )
 
-        submitted = ui.form_submit_button("수익률 계산", type="primary", width="stretch")
+        submitted = st.form_submit_button("수익률 계산", type="primary", width="stretch")
 
     if submitted:
         st.session_state["calc_auto_result"] = True
@@ -579,49 +581,49 @@ def render_return_calculator(*, in_sidebar: bool = False) -> None:
     buy_amount = st.session_state.get("calc_last_buy_amount", float(buy_amount))
 
     if not symbol:
-        ui.error("종목 코드를 입력해 주세요.")
+        out.error("종목 코드를 입력해 주세요.")
         return
     if buy_amount <= 0:
-        ui.error("매수 금액은 0보다 커야 합니다.")
+        out.error("매수 금액은 0보다 커야 합니다.")
         return
 
     with st.spinner("계산 중..."):
         try:
             result = calculate_return(symbol, buy_date, float(buy_amount))
         except Exception as exc:  # noqa: BLE001
-            ui.error(f"계산 실패: {exc}")
+            out.error(f"계산 실패: {exc}")
             return
 
     if result is None:
-        ui.error("해당 기간의 시세를 찾지 못했습니다.")
+        out.error("해당 기간의 시세를 찾지 못했습니다.")
         return
 
     is_profit = result["return_pct"] >= 0
     color = "blue" if is_profit else "red"
 
-    ui.success(f"{result['company_name']} ({symbol})")
+    out.success(f"{result['company_name']} ({symbol})")
     if result["actual_buy_date"] != buy_date:
-        ui.caption(f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)")
+        out.caption(f"실제 적용 매수일: {result['actual_buy_date']} (휴장일 보정)")
 
     if in_sidebar:
-        ui.write(f"매수가: **{format_price(symbol, result['buy_price'])}**")
-        ui.write(f"현재가: **{format_price(symbol, result['current_price'])}**")
-        ui.markdown(
+        out.write(f"매수가: **{format_price(symbol, result['buy_price'])}**")
+        out.write(f"현재가: **{format_price(symbol, result['current_price'])}**")
+        out.markdown(
             f":{color}[**현재 가치: {format_money(symbol, result['current_value'])}**]"
         )
-        ui.markdown(
+        out.markdown(
             f":{color}[**수익/손실: {format_money(symbol, result['profit'])}**]"
         )
-        ui.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
+        out.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
     else:
-        price_col, value_col = ui.columns(2)
+        price_col, value_col = out.columns(2)
         with price_col:
-            ui.metric("매수가", format_price(symbol, result["buy_price"]))
-            ui.metric("현재가", format_price(symbol, result["current_price"]))
+            out.metric("매수가", format_price(symbol, result["buy_price"]))
+            out.metric("현재가", format_price(symbol, result["current_price"]))
         with value_col:
-            ui.metric("현재 가치", format_money(symbol, result["current_value"]))
-            ui.metric("수익/손실", format_money(symbol, result["profit"]))
-        ui.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
+            out.metric("현재 가치", format_money(symbol, result["current_value"]))
+            out.metric("수익/손실", format_money(symbol, result["profit"]))
+        out.markdown(f":{color}[**수익률: {result['return_pct']:+.2f}%**]")
 
 
 def detect_mobile() -> bool:
