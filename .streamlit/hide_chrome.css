@@ -50,6 +50,42 @@ a[href*="streamlit.io/cloud"] {
   padding-right: 0.45rem !important;
 }
 
+/* 제목 옆 HSWarehouse 아이콘 링크 */
+.st-key-title_row {
+  width: 100% !important;
+  align-items: center !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.st-key-title_row [data-testid="stHorizontalBlock"] {
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+.warehouse-icon-link {
+  display: inline-block;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.warehouse-icon-link img {
+  width: 72px;
+  height: auto;
+  border-radius: 12px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.warehouse-icon-link:hover img {
+  transform: scale(1.04);
+  opacity: 0.92;
+}
+
+@media (max-width: 768px) {
+  .warehouse-icon-link img {
+    width: 48px;
+  }
+}
+
 /* 제목: 한 줄 유지 */
 .block-container h1 {
   font-size: clamp(1.35rem, 5vw, 2.25rem) !important;
@@ -59,7 +95,7 @@ a[href*="streamlit.io/cloud"] {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-top: 0.25rem !important;
-  margin-bottom: 1rem !important;
+  margin-bottom: 0 !important;
 }
 
 /* 모바일 네비: 왼쪽 2개 + 오른쪽 끝 계산기 (항상 가로 한 줄) */

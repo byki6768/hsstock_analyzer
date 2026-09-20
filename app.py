@@ -838,6 +838,21 @@ def render_theme_toggle() -> None:
             st.rerun()
 
 
+def render_warehouse_icon_link() -> None:
+    """HSWarehouse 데이터 분석기 페이지로 연결되는 아이콘."""
+    st.html(
+        """
+        <a href="https://hswarehouse.app/data-analyzer" target="_blank" rel="noopener noreferrer"
+           class="warehouse-icon-link" title="HSWarehouse 데이터 분석기">
+          <img src="https://copilot.microsoft.com/th/id/BCO.data-analyzer-icon.png"
+               alt="데이터 분석 아이콘"
+               width="120"
+               style="border-radius: 12px; display: block;">
+        </a>
+        """
+    )
+
+
 st.set_page_config(
     page_title="주식 데이터 분석기",
     layout="wide",
@@ -852,7 +867,10 @@ st.set_page_config(
 st.html((Path(__file__).parent / ".streamlit" / "hide_chrome.css"))
 
 render_theme_toggle()
-st.title("주식 데이터 분석기")
+
+with st.container(horizontal=True, gap="medium", wrap=False, key="title_row"):
+    render_warehouse_icon_link()
+    st.title("주식 데이터 분석기")
 
 if detect_mobile():
     render_mobile_layout()
